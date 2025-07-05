@@ -8,6 +8,7 @@ import {
     ActionStatus,
     AppThunk,
     platformCtrl,
+    itemTitleWDefault,
 } from "../utils"
 import { RSSSource, updateSource, updateUnreadCounts } from "./source"
 import { FeedActionTypes, INIT_FEED, LOAD_MORE, dismissItems } from "./feed"
@@ -47,7 +48,7 @@ export class RSSItem {
             if (content && typeof content !== "string") delete item[field]
         }
         this.source = source.sid
-        this.title = item.title || intl.get("article.untitled")
+        this.title = itemTitleWDefault(item)
         this.link = item.link || ""
         this.fetchedDate = new Date()
         this.date = new Date(item.isoDate ?? item.pubDate ?? this.fetchedDate)

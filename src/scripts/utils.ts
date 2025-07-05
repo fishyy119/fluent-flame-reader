@@ -275,3 +275,17 @@ export function initTouchBarWithTexts() {
         notifications: intl.get("nav.notifications"),
     })
 }
+
+const MAX_SNIPPET_AS_TITLE_LEN = 50
+export function itemTitleWDefault(item: MyParserItem): string {
+    if (item.title) {
+        return item.title
+    }
+    if (item.contentSnippet) {
+        if (item.contentSnippet.length <= MAX_SNIPPET_AS_TITLE_LEN) {
+            return item.contentSnippet
+        }
+        return item.contentSnippet.substr(0, MAX_SNIPPET_AS_TITLE_LEN - 1) + "…"
+    }
+    return intl.get("article.untitled")
+}
