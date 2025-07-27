@@ -19,35 +19,30 @@ export interface SourceEntry {
     hidden: boolean
 }
 
+export interface ItemEntry {
+    source: number
+    title: string
+    link: string
+    date: Date
+    fetchedDate: Date
+    thumb?: string
+    content: string
+    snippet: string
+    creator?: string
+    hasRead: boolean
+    starred: boolean
+    hidden: boolean
+    notify: boolean
+    serviceRef?: string
+}
+
 export const fluentDB = new Dexie("MainDB") as Dexie & {
     sources: EntityTable<SourceEntry, "sid">
 }
 fluentDB.version(1).stores({
     sources: `++sid, &url`,
+    items: `++id, &source, &date, &serviceRef`
 })
-
-const idbSchema = lf.schema.create("itemsDB", 1)
-idbSchema
-    .createTable("items")
-    .addColumn("_id", lf.Type.INTEGER)
-    .addPrimaryKey(["_id"], true)
-    .addColumn("source", lf.Type.INTEGER)
-    .addColumn("title", lf.Type.STRING)
-    .addColumn("link", lf.Type.STRING)
-    .addColumn("date", lf.Type.DATE_TIME)
-    .addColumn("fetchedDate", lf.Type.DATE_TIME)
-    .addColumn("thumb", lf.Type.STRING)
-    .addColumn("content", lf.Type.STRING)
-    .addColumn("snippet", lf.Type.STRING)
-    .addColumn("creator", lf.Type.STRING)
-    .addColumn("hasRead", lf.Type.BOOLEAN)
-    .addColumn("starred", lf.Type.BOOLEAN)
-    .addColumn("hidden", lf.Type.BOOLEAN)
-    .addColumn("notify", lf.Type.BOOLEAN)
-    .addColumn("serviceRef", lf.Type.STRING)
-    .addNullable(["thumb", "creator", "serviceRef"])
-    .addIndex("idxDate", ["date"], false, lf.Order.DESC)
-    .addIndex("idxService", ["serviceRef"], false)
 
 export let itemsDB: lf.Database
 export let items: lf.schema.Table
@@ -112,6 +107,4 @@ function wrapRequest<T>(req: T & IDBRequest): Promise<T> {
 
 export async function init() {
     await migrateLovefieldSourcesDB("sourcesDB", 3)
-    itemsDB = await idbSchema.connect()
-    items = itemsDB.getSchema().table("items")
 }
