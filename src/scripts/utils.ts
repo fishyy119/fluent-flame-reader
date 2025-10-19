@@ -26,6 +26,7 @@ const rssParser = new Parser({
         item: [
             "thumb",
             "image",
+            ["media:thumbnail", "mediaThumbnail"],
             ["content:encoded", "fullContent"],
             ["media:content", "mediaContent", { keepArray: true }],
         ],
