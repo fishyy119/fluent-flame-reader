@@ -81,7 +81,7 @@ export class RSSItem {
         }
         else if (parsed.mediaContent) {
             let images = parsed.mediaContent.filter(
-                c => c.$ && c.$.medium === "image" && c.$.url
+                c => c.$ && (c.$.medium === "image" || typeof c.$.type === "string" && c.$.type.startsWith("image/")) && c.$.url
             )
             if (images.length > 0) item.thumb = images[0].$.url
         }
