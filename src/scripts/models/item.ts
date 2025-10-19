@@ -76,8 +76,9 @@ export class RSSItem {
         } else if (parsed.image && typeof parsed.image === "string") {
             item.thumb = parsed.image
         } 
-        else if (parsed.mediaThumbnail?.$?.url) {
-            item.thumb = parsed.mediaThumbnail.$.url;
+        else if (parsed.mediaThumbnails) {
+            const images = parsed.mediaThumbnails.filter(t => t.$?.url);
+            if(images.length > 0) item.thumb = images[0].$.url;
         }
         else if (parsed.mediaContent) {
             let images = parsed.mediaContent.filter(
