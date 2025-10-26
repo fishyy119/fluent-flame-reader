@@ -21,7 +21,7 @@ const MagazineCard: React.FunctionComponent<Card.Props> = props => (
         data-is-focusable>
         {props.item.thumb ? (
             <div className="head">
-                <CardThumbnail item={props.item} allowVideo/>
+                <CardThumbnail item={props.item} allowVideo />
             </div>
         ) : null}
         <div className="data">

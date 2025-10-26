@@ -19,9 +19,9 @@ const DefaultCard: React.FunctionComponent<Card.Props> = props => (
         {...Card.bindEventsToProps(props)}
         data-iid={props.item.iid}
         data-is-focusable>
-        <CardThumbnail className="bg" item={props.item}/>
+        <CardThumbnail className="bg" item={props.item} />
         <div className="bg"></div>
-        <CardThumbnail className="head" item={props.item} allowVideo/>
+        <CardThumbnail className="head" item={props.item} allowVideo />
         <CardInfo source={props.source} item={props.item} />
         <h3 className="title">
             <Highlights text={props.item.title} filter={props.filter} title />
