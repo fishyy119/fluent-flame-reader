@@ -124,14 +124,17 @@
     width: 100%;
     height: 100%;
 }
-.default-card img.bg {
+.default-card img.bg,
+.default-card video.bg {
     object-fit: cover;
     filter: var(--blur);
 }
-.default-card div.bg {
+.default-card div.bg,
+.default-card video.bg  {
     background-color: #fffb;
 }
-.default-card img.head {
+.default-card img.head,
+.default-card video.head {
     display: block;
     object-fit: cover;
     position: relative;
@@ -146,14 +149,17 @@
     -webkit-user-drag: none;
 }
 .default-card img.head,
+.default-card video.head,
 .default-card p,
 .default-card h3 {
     transition: transform ease-out 0.12s;
 }
 .default-card.transform:hover img.head,
+.default-card.transform:hover video.head,
 .default-card.transform:hover p,
 .default-card.transform:hover h3,
 .ms-Fabric--isFocusVisible .default-card.transform:focus img.head,
+.ms-Fabric--isFocusVisible .default-card.transform:focus video.head,
 .ms-Fabric--isFocusVisible .default-card.transform:focus p,
 .ms-Fabric--isFocusVisible .default-card.transform:focus h3 {
     transform: translateY(-144px);
@@ -205,7 +211,8 @@
     height: 80px;
     margin: 8px 0 8px 10px;
 }
-.list-card div.head img {
+.list-card div.head img,
+.list-card div.head video {
     width: 80px;
     height: 80px;
     object-fit: cover;
@@ -286,7 +293,8 @@
     height: 160px;
     margin-right: 25px;
 }
-.magazine-card div.head img {
+.magazine-card div.head img,
+.magazine-card div.head video {
     width: 200px;
     height: 160px;
     object-fit: cover;

@@ -3,6 +3,7 @@ import { Card } from "./card"
 import CardInfo from "./info"
 import Highlights from "./highlights"
 import { SourceTextDirection } from "../../scripts/models/source"
+import CardThumbnail from "./thumbnail"
 
 const className = (props: Card.Props) => {
     let cn = ["card", "magazine-card"]
@@ -20,7 +21,7 @@ const MagazineCard: React.FunctionComponent<Card.Props> = props => (
         data-is-focusable>
         {props.item.thumb ? (
             <div className="head">
-                <img src={props.item.thumb} />
+                <CardThumbnail item={props.item} allowVideo/>
             </div>
         ) : null}
         <div className="data">

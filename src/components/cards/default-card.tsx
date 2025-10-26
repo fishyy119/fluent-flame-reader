@@ -3,6 +3,7 @@ import { Card } from "./card"
 import CardInfo from "./info"
 import Highlights from "./highlights"
 import { SourceTextDirection } from "../../scripts/models/source"
+import CardThumbnail from "./thumbnail"
 
 const className = (props: Card.Props) => {
     let cn = ["card", "default-card"]
@@ -18,13 +19,9 @@ const DefaultCard: React.FunctionComponent<Card.Props> = props => (
         {...Card.bindEventsToProps(props)}
         data-iid={props.item.iid}
         data-is-focusable>
-        {props.item.thumb ? (
-            <img className="bg" src={props.item.thumb} />
-        ) : null}
+        <CardThumbnail className="bg" item={props.item}/>
         <div className="bg"></div>
-        {props.item.thumb ? (
-            <img className="head" src={props.item.thumb} />
-        ) : null}
+        <CardThumbnail className="head" item={props.item} allowVideo/>
         <CardInfo source={props.source} item={props.item} />
         <h3 className="title">
             <Highlights text={props.item.title} filter={props.filter} title />
