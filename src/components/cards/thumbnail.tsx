@@ -1,6 +1,6 @@
 import * as React from "react"
 import { RSSItem } from "../../scripts/models/item"
-import CachedImg from "./cachedImg"
+import CachedImg from "./cached-img"
 
 type CardThumbnailProps = {
     item: RSSItem
