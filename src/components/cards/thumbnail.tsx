@@ -1,5 +1,6 @@
 import * as React from "react"
 import { RSSItem } from "../../scripts/models/item"
+import CachedImg from "./cachedImg"
 
 type CardThumbnailProps = {
     item: RSSItem
@@ -20,21 +21,16 @@ const isVideo = (url: string) => {
 
 const mediaElement = (props: CardThumbnailProps) => {
     if (!isVideo(props.item.thumb)) {
-        return <img className={props.className} src={props.item.thumb}></img>
+        // return <img className={props.className} src={props.item.thumb}></img>
+        return <CachedImg src={props.item.thumb} className={props.className}></CachedImg>
     }
     if (props.allowVideo) {
-        const ref = React.useRef<HTMLVideoElement>()
-        const video = (
-            <video
+        return <video
                 className={props.className}
                 src={props.item.thumb}
                 muted
                 autoPlay
-                ref={ref}
                 loop></video>
-        )
-        // ref.current?.addEventListener("timeupdate", () => ref.current.pause());
-        return video
     }
     return null
 }
