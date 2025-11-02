@@ -199,8 +199,8 @@ async function setSourceUnreadCounts(sourceState: SourceState): Promise<void> {
             // match.
             console.error(
                 `could not correctly count row for unreadCounts` +
-                ` as it does not exist in the sources state`,
-                row
+                    ` as it does not exist in the sources state`,
+                row,
             )
             continue
         }

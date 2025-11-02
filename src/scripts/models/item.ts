@@ -1,7 +1,13 @@
 import { fluentDB } from "../db"
 import intl from "react-intl-universal"
 import type { MyParserItem } from "../utils"
-import { htmlDecode, ActionStatus, AppThunk, dateCompare, platformCtrl } from "../utils"
+import {
+    htmlDecode,
+    ActionStatus,
+    AppThunk,
+    dateCompare,
+    platformCtrl,
+} from "../utils"
 import { RSSSource, updateSource, updateUnreadCounts } from "./source"
 import { FeedActionTypes, INIT_FEED, LOAD_MORE, dismissItems } from "./feed"
 import {
@@ -51,41 +57,45 @@ export class RSSItem {
         this.notify = false
     }
 
-    static async fetchHead(url: string) : Promise<string> {
-        const controller = new AbortController();
-        const response = await fetch(url, {signal: controller.signal});
+    static async fetchHead(url: string): Promise<string> {
+        const controller = new AbortController()
+        const response = await fetch(url, { signal: controller.signal })
         let result = ""
-        if(!response.ok || !response.body)
-            return result;
-        const stream = response.body.pipeThrough(new TextDecoderStream());
-        for await (const value of stream)
-        {        
-            result += value;
-            if(/<\/head>/i.test(value))
-            {
-                controller.abort();
-                return result;
+        if (!response.ok || !response.body) return result
+        const stream = response.body.pipeThrough(new TextDecoderStream())
+        for await (const value of stream) {
+            result += value
+            if (/<\/head>/i.test(value)) {
+                controller.abort()
+                return result
             }
         }
-        return result;
+        return result
     }
 
-    static opengraphThumbnail(head: string) : string | null
-    {
+    static opengraphThumbnail(head: string): string | null {
         const dom = new DOMParser().parseFromString(head, "text/html")
-        const elements = [...dom.head.querySelectorAll("meta[property*='og:image'],meta[property*='og:video']")].map((e: HTMLMetaElement) => 
-            {
-                return {tag: e.getAttribute("property"), content: e.content}
-            });
+        const elements = [
+            ...dom.head.querySelectorAll(
+                "meta[property*='og:image'],meta[property*='og:video']",
+            ),
+        ].map((e: HTMLMetaElement) => {
+            return { tag: e.getAttribute("property"), content: e.content }
+        })
 
-        const queries = ["og:image", "og:image:url", "og:image:secure_url", "og:video", "og:video:url", "og:video:secure_url"];
-        for(const query of queries)
-        {
-            const element = elements.find(e => e.tag === query)?.content ?? null;
-            if(element !== null)
-                return element;
+        const queries = [
+            "og:image",
+            "og:image:url",
+            "og:image:secure_url",
+            "og:video",
+            "og:video:url",
+            "og:video:secure_url",
+        ]
+        for (const query of queries) {
+            const element = elements.find(e => e.tag === query)?.content ?? null
+            if (element !== null) return element
         }
-        return null;
+        return null
     }
 
     static async parseContent(item: RSSItem, parsed: MyParserItem) {
@@ -100,14 +110,13 @@ export class RSSItem {
             item.content = parsed.content || ""
             item.snippet = htmlDecode(parsed.contentSnippet || "")
         }
-        if(parsed.link) //TODO: take preferences into account
-        {
-            const head = await this.fetchHead(parsed.link);
-            if(/og:(?:image|video)/ig.test(head))
-                item.thumb = this.opengraphThumbnail(head);
+        //TODO: take preferences into account
+        if (parsed.link) {
+            const head = await this.fetchHead(parsed.link)
+            if (/og:(?:image|video)/gi.test(head))
+                item.thumb = this.opengraphThumbnail(head)
         }
-        if(!item.thumb)
-        {
+        if (!item.thumb) {
             if (parsed.thumb) {
                 item.thumb = parsed.thumb
             } else if (parsed.image?.$?.url) {
@@ -129,7 +138,10 @@ export class RSSItem {
                 if (images.length > 0) item.thumb = images[0].$.url
             }
             if (!item.thumb) {
-                let dom = new DOMParser().parseFromString(item.content, "text/html")
+                let dom = new DOMParser().parseFromString(
+                    item.content,
+                    "text/html",
+                )
                 let baseEl = dom.createElement("base")
                 baseEl.setAttribute(
                     "href",

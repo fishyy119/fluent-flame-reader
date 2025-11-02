@@ -22,15 +22,21 @@ const isVideo = (url: string) => {
 const mediaElement = (props: CardThumbnailProps) => {
     if (!isVideo(props.item.thumb)) {
         // return <img className={props.className} src={props.item.thumb}></img>
-        return <CachedImg src={props.item.thumb} className={props.className}></CachedImg>
+        return (
+            <CachedImg
+                src={props.item.thumb}
+                className={props.className}></CachedImg>
+        )
     }
     if (props.allowVideo) {
-        return <video
+        return (
+            <video
                 className={props.className}
                 src={props.item.thumb}
                 muted
                 autoPlay
                 loop></video>
+        )
     }
     return null
 }

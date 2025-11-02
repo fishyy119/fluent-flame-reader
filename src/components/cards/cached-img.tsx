@@ -5,50 +5,58 @@ type ImgProps = {
     className?: string
 }
 
-const cache = new Map<string, HTMLImageElement>();
+const cache = new Map<string, HTMLImageElement>()
 
-function draw(canvasRef: React.MutableRefObject<HTMLCanvasElement>, img: HTMLImageElement)
-{
-    const canvas = canvasRef.current;
-    if(!canvas)
-    {
-        setTimeout(() => draw(canvasRef, img), 100);
-        return;
+function draw(
+    canvasRef: React.MutableRefObject<HTMLCanvasElement>,
+    img: HTMLImageElement,
+) {
+    const canvas = canvasRef.current
+    if (!canvas) {
+        setTimeout(() => draw(canvasRef, img), 100)
+        return
     }
-    const maxWidth = 256;
+    const maxWidth = 256
     const maxHeight = 256
-    if(img.width > maxWidth || img.height > maxHeight)
-    {
-        const scaleFactor = Math.max(img.width / maxWidth, img.height/maxHeight);
-        canvas.width = img.width / scaleFactor;
-        canvas.height = img.height / scaleFactor;
+    if (img.width > maxWidth || img.height > maxHeight) {
+        const scaleFactor = Math.max(
+            img.width / maxWidth,
+            img.height / maxHeight,
+        )
+        canvas.width = img.width / scaleFactor
+        canvas.height = img.height / scaleFactor
+    } else {
+        canvas.width = img.width
+        canvas.height = img.height
     }
-    else
-    {
-        canvas.width = img.width;
-        canvas.height = img.height;
-    }
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height);
+    const ctx = canvas.getContext("2d")
+    ctx.drawImage(
+        img,
+        0,
+        0,
+        img.width,
+        img.height,
+        0,
+        0,
+        canvas.width,
+        canvas.height,
+    )
 }
 
 const img = (props: ImgProps) => {
     const canvasRef = React.useRef<HTMLCanvasElement>()
     const canvas = <canvas className={props.className} ref={canvasRef}></canvas>
-    if(cache.has(props.src))
-    {
-        const img = cache.get(props.src);
-        if(img.naturalWidth > 0 && img.naturalHeight > 0)
-            draw(canvasRef, img);
-        else
-            img.addEventListener("loadeddata", () => draw(canvasRef,img));
-        return canvas;
+    if (cache.has(props.src)) {
+        const img = cache.get(props.src)
+        if (img.naturalWidth > 0 && img.naturalHeight > 0) draw(canvasRef, img)
+        else img.addEventListener("loadeddata", () => draw(canvasRef, img))
+        return canvas
     }
-    const img = new Image();
-    img.src = props.src;
-    img.loading = "eager";
-    cache.set(props.src, img);
-    img.addEventListener("loadeddata", () => draw(canvasRef,img));
+    const img = new Image()
+    img.src = props.src
+    img.loading = "eager"
+    cache.set(props.src, img)
+    img.addEventListener("loadeddata", () => draw(canvasRef, img))
     return canvas
 }
 
