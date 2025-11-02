@@ -78,7 +78,7 @@ export class RSSSource {
             .limit(1)
             .toArray()
         if (items.length === 0) {
-            RSSItem.parseContent(i, item)
+            await RSSItem.parseContent(i, item)
             if (source.rules) SourceRule.applyAll(source.rules, i)
             return i
         } else {

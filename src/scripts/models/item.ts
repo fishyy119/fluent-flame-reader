@@ -51,7 +51,44 @@ export class RSSItem {
         this.notify = false
     }
 
-    static parseContent(item: RSSItem, parsed: MyParserItem) {
+    static async fetchHead(url: string) : Promise<string> {
+        const controller = new AbortController();
+        const response = await fetch(url, {signal: controller.signal});
+        let result = ""
+        if(!response.ok || !response.body)
+            return result;
+        const stream = response.body.pipeThrough(new TextDecoderStream());
+        for await (const value of stream)
+        {        
+            result += value;
+            if(/<\/head>/i.test(value))
+            {
+                controller.abort();
+                return result;
+            }
+        }
+        return result;
+    }
+
+    static opengraphThumbnail(head: string) : string | null
+    {
+        const dom = new DOMParser().parseFromString(head, "text/html")
+        const elements = [...dom.head.querySelectorAll("meta[property*='og:image'],meta[property*='og:video']")].map((e: HTMLMetaElement) => 
+            {
+                return {tag: e.getAttribute("property"), content: e.content}
+            });
+
+        const queries = ["og:image", "og:image:url", "og:image:secure_url", "og:video", "og:video:url", "og:video:secure_url"];
+        for(const query of queries)
+        {
+            const element = elements.find(e => e.tag === query)?.content ?? null;
+            if(element !== null)
+                return element;
+        }
+        return null;
+    }
+
+    static async parseContent(item: RSSItem, parsed: MyParserItem) {
         for (let field of ["thumb", "content", "fullContent"]) {
             const content = parsed[field]
             if (content && typeof content !== "string") delete parsed[field]
@@ -63,36 +100,45 @@ export class RSSItem {
             item.content = parsed.content || ""
             item.snippet = htmlDecode(parsed.contentSnippet || "")
         }
-        if (parsed.thumb) {
-            item.thumb = parsed.thumb
-        } else if (parsed.image?.$?.url) {
-            item.thumb = parsed.image.$.url
-        } else if (parsed.image && typeof parsed.image === "string") {
-            item.thumb = parsed.image
-        } else if (parsed.mediaThumbnails) {
-            const images = parsed.mediaThumbnails.filter(t => t.$?.url)
-            if (images.length > 0) item.thumb = images[0].$.url
-        } else if (parsed.mediaContent) {
-            let images = parsed.mediaContent.filter(
-                c =>
-                    c.$ &&
-                    (c.$.medium === "image" ||
-                        (typeof c.$.type === "string" &&
-                            c.$.type.startsWith("image/"))) &&
-                    c.$.url,
-            )
-            if (images.length > 0) item.thumb = images[0].$.url
+        if(parsed.link) //TODO: take preferences into account
+        {
+            const head = await this.fetchHead(parsed.link);
+            if(/og:(?:image|video)/ig.test(head))
+                item.thumb = this.opengraphThumbnail(head);
         }
-        if (!item.thumb) {
-            let dom = new DOMParser().parseFromString(item.content, "text/html")
-            let baseEl = dom.createElement("base")
-            baseEl.setAttribute(
-                "href",
-                item.link.split("/").slice(0, 3).join("/"),
-            )
-            dom.head.append(baseEl)
-            let img = dom.querySelector("img")
-            if (img && img.src) item.thumb = img.src
+        if(!item.thumb)
+        {
+            if (parsed.thumb) {
+                item.thumb = parsed.thumb
+            } else if (parsed.image?.$?.url) {
+                item.thumb = parsed.image.$.url
+            } else if (parsed.image && typeof parsed.image === "string") {
+                item.thumb = parsed.image
+            } else if (parsed.mediaThumbnails) {
+                const images = parsed.mediaThumbnails.filter(t => t.$?.url)
+                if (images.length > 0) item.thumb = images[0].$.url
+            } else if (parsed.mediaContent) {
+                let images = parsed.mediaContent.filter(
+                    c =>
+                        c.$ &&
+                        (c.$.medium === "image" ||
+                            (typeof c.$.type === "string" &&
+                                c.$.type.startsWith("image/"))) &&
+                        c.$.url,
+                )
+                if (images.length > 0) item.thumb = images[0].$.url
+            }
+            if (!item.thumb) {
+                let dom = new DOMParser().parseFromString(item.content, "text/html")
+                let baseEl = dom.createElement("base")
+                baseEl.setAttribute(
+                    "href",
+                    item.link.split("/").slice(0, 3).join("/"),
+                )
+                dom.head.append(baseEl)
+                let img = dom.querySelector("img")
+                if (img && img.src) item.thumb = img.src
+            }
         }
         if (
             item.thumb &&
