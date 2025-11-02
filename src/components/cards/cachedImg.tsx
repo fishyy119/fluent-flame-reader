@@ -15,10 +15,21 @@ function draw(canvasRef: React.MutableRefObject<HTMLCanvasElement>, img: HTMLIma
         setTimeout(() => draw(canvasRef, img), 100);
         return;
     }
-    canvas.width = img.width;
-    canvas.height = img.height;
+    const maxWidth = 256;
+    const maxHeight = 256
+    if(img.width > maxWidth || img.height > maxHeight)
+    {
+        const scaleFactor = Math.max(img.width / maxWidth, img.height/maxHeight);
+        canvas.width = img.width / scaleFactor;
+        canvas.height = img.height / scaleFactor;
+    }
+    else
+    {
+        canvas.width = img.width;
+        canvas.height = img.height;
+    }
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0, img.width, img.height);
+    ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height);
 }
 
 const img = (props: ImgProps) => {
