@@ -6,39 +6,64 @@ type ImgProps = {
 }
 
 class CachedImg extends React.Component<ImgProps> {
-    private static readonly _cache = new Map<string, HTMLImageElement>()
+    private static readonly _cache = new Map<
+        string,
+        HTMLImageElement | HTMLVideoElement
+    >()
+    private static readonly videoExtensions = ["mp4", "webm", "mkv", "mov"]
     private readonly _canvasRef = React.createRef<HTMLCanvasElement>()
-    private _img: HTMLImageElement | null = null
+    private readonly _maxCanvasDimension = 256
+    private _needsRescaling: boolean = true
+    private _imgSource: HTMLImageElement | HTMLVideoElement | null = null
 
     constructor(props: ImgProps) {
         super(props)
     }
 
+    private isVideo(url: string): boolean {
+        const extensionSearch = /\.(\w{3,4})(?:$|\?)/.exec(url)
+        return (
+            extensionSearch &&
+            extensionSearch.length > 1 &&
+            CachedImg.videoExtensions.includes(extensionSearch[1])
+        )
+    }
     private draw() {
         const canvas = this._canvasRef.current
-        if (!canvas || !this._img) {
+        if (!canvas || !this._imgSource) {
             return
         }
-        const maxWidth = 256
-        const maxHeight = 256
-        if (this._img.width > maxWidth || this._img.height > maxHeight) {
-            const scaleFactor = Math.max(
-                this._img.width / maxWidth,
-                this._img.height / maxHeight,
-            )
-            canvas.width = this._img.width / scaleFactor
-            canvas.height = this._img.height / scaleFactor
-        } else {
-            canvas.width = this._img.width
-            canvas.height = this._img.height
+        const width =
+            this._imgSource instanceof HTMLImageElement
+                ? this._imgSource.naturalWidth
+                : this._imgSource.videoWidth
+        const height =
+            this._imgSource instanceof HTMLImageElement
+                ? this._imgSource.naturalHeight
+                : this._imgSource.videoHeight
+        if (this._needsRescaling) {
+            if (
+                width > this._maxCanvasDimension ||
+                height > this._maxCanvasDimension
+            ) {
+                const scaleFactor = Math.max(
+                    width / this._maxCanvasDimension,
+                    height / this._maxCanvasDimension,
+                )
+                canvas.width = width / scaleFactor
+                canvas.height = height / scaleFactor
+            } else {
+                canvas.width = width
+                canvas.height = height
+            }
         }
         const ctx = canvas.getContext("2d")
         ctx.drawImage(
-            this._img,
+            this._imgSource,
             0,
             0,
-            this._img.width,
-            this._img.height,
+            width,
+            height,
             0,
             0,
             canvas.width,
@@ -53,17 +78,36 @@ class CachedImg extends React.Component<ImgProps> {
                 ref={this._canvasRef}></canvas>
         )
         if (CachedImg._cache.has(this.props.src)) {
-            this._img = CachedImg._cache.get(this.props.src)
+            this._imgSource = CachedImg._cache.get(this.props.src)
         } else {
-            this._img = new Image()
-            CachedImg._cache.set(this.props.src, this._img)
-            this._img.loading = "eager"
-            this._img.src = this.props.src
+            if (this.isVideo(this.props.src)) {
+                this._imgSource = document.createElement("video")
+                this._imgSource.loop = true
+                this._imgSource.muted = true
+                this._imgSource.autoplay = true
+            } else {
+                this._imgSource = new Image()
+                this._imgSource.loading = "eager"
+            }
+            CachedImg._cache.set(this.props.src, this._imgSource)
+            this._imgSource.src = this.props.src
         }
-        this._img
-            .decode()
-            .then(() => this.draw())
-            .catch(() => this.forceUpdate())
+        if (this._imgSource instanceof HTMLImageElement) {
+            this._imgSource
+                .decode()
+                .then(() => this.draw())
+                .catch(() => this.forceUpdate())
+        } else {
+            const requestFrame = () => {
+                this.draw()
+                ;(
+                    this._imgSource as HTMLVideoElement
+                ).requestVideoFrameCallback(requestFrame)
+            }
+            if (this._imgSource.readyState < this._imgSource.HAVE_CURRENT_DATA)
+                this._imgSource.addEventListener("loadeddata", requestFrame)
+            else requestFrame()
+        }
         return canvas
     }
 }
