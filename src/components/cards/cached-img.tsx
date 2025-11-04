@@ -14,7 +14,11 @@ class CachedImg extends React.Component<ImgProps> {
     private readonly _canvasRef = React.createRef<HTMLCanvasElement>()
     private readonly _maxCanvasDimension = 256
     private _needsRescaling: boolean = true
-    private _imgSource: HTMLImageElement | HTMLVideoElement | VideoFrame[] | null = null
+    private _imgSource:
+        | HTMLImageElement
+        | HTMLVideoElement
+        | VideoFrame[]
+        | null = null
     private _animationTimeout: NodeJS.Timeout | null = null
     private _requestVideoFrameCallback: number | null = null
 
@@ -22,41 +26,34 @@ class CachedImg extends React.Component<ImgProps> {
         super(props)
     }
 
-    private async loadContentType(url: string): Promise<string>
-    {
-        const response = await fetch(url, {method: "HEAD"});
-        if(!response.ok)
-            return "";
-        return response.headers.get("content-type");
-
+    private async loadContentType(url: string): Promise<string> {
+        const response = await fetch(url, { method: "HEAD" })
+        if (!response.ok) return ""
+        return response.headers.get("content-type")
     }
 
-    private async loadImage(url: string): Promise<VideoFrame[] | null>
-    {
-        const response = await fetch(url);
-        if(!response.ok)
-            return null;
-        const data = await response.bytes();
-        const contentType = response.headers.get("content-type");
-        if(!ImageDecoder.isTypeSupported(contentType))
-            return null;
-        const decoder = new ImageDecoder({data, type: contentType})
-        let frameIndex = 0;
-        const frames: VideoFrame[] = [];
-        while(true)
-        {
-            try
-            {
-                const image = await decoder.decode({frameIndex, completeFramesOnly: true});
+    private async loadImage(url: string): Promise<VideoFrame[] | null> {
+        const response = await fetch(url)
+        if (!response.ok) return null
+        const data = await response.bytes()
+        const contentType = response.headers.get("content-type")
+        if (!ImageDecoder.isTypeSupported(contentType)) return null
+        const decoder = new ImageDecoder({ data, type: contentType })
+        let frameIndex = 0
+        const frames: VideoFrame[] = []
+        while (true) {
+            try {
+                const image = await decoder.decode({
+                    frameIndex,
+                    completeFramesOnly: true,
+                })
                 frames.push(image.image)
-                frameIndex++;
-            }
-            catch(e){
-                if(e instanceof RangeError)
-                    break;
+                frameIndex++
+            } catch (e) {
+                if (e instanceof RangeError) break
             }
         }
-        return frames;
+        return frames
     }
 
     private draw(img: HTMLImageElement | HTMLVideoElement | VideoFrame) {
@@ -67,11 +64,15 @@ class CachedImg extends React.Component<ImgProps> {
         const width =
             img instanceof HTMLImageElement
                 ? img.naturalWidth
-                : img instanceof HTMLVideoElement ? img.videoWidth : img.displayWidth
+                : img instanceof HTMLVideoElement
+                  ? img.videoWidth
+                  : img.displayWidth
         const height =
             img instanceof HTMLImageElement
                 ? img.naturalHeight
-                : img instanceof HTMLVideoElement ? img.videoHeight : img.displayHeight
+                : img instanceof HTMLVideoElement
+                  ? img.videoHeight
+                  : img.displayHeight
         if (this._needsRescaling) {
             if (
                 width > this._maxCanvasDimension ||
@@ -102,8 +103,7 @@ class CachedImg extends React.Component<ImgProps> {
         )
     }
 
-    private async renderImage() : Promise<void>
-    {
+    private async renderImage(): Promise<void> {
         if (CachedImg._cache.has(this.props.src)) {
             this._imgSource = CachedImg._cache.get(this.props.src)
         } else {
@@ -114,8 +114,18 @@ class CachedImg extends React.Component<ImgProps> {
                 this._imgSource.muted = true
                 this._imgSource.autoplay = true
                 this._imgSource.src = this.props.src
-            } else if (["image/gif", "image/webp", "image/avif", "image/apng", "image/svg"].includes(contentType) && ImageDecoder.isTypeSupported(contentType)){
-                this._imgSource = await this.loadImage(this.props.src);
+            } else if (
+                //potentially animated images
+                [
+                    "image/gif",
+                    "image/webp",
+                    "image/avif",
+                    "image/apng",
+                    "image/svg",
+                ].includes(contentType) &&
+                ImageDecoder.isTypeSupported(contentType)
+            ) {
+                this._imgSource = await this.loadImage(this.props.src)
             } else {
                 this._imgSource = new Image()
                 this._imgSource.loading = "eager"
@@ -124,48 +134,44 @@ class CachedImg extends React.Component<ImgProps> {
             CachedImg._cache.set(this.props.src, this._imgSource)
         }
         if (this._imgSource instanceof HTMLImageElement) {
-            try{
-                await this._imgSource.decode();
-                this.draw(this._imgSource);
-            }
-            catch
-            {
-                this.forceUpdate();
+            try {
+                await this._imgSource.decode()
+                this.draw(this._imgSource)
+            } catch {
+                this.forceUpdate()
             }
         } else if (this._imgSource instanceof HTMLVideoElement) {
-            const video = this._imgSource;
-            if(this._requestVideoFrameCallback !== null)
-            {
+            const video = this._imgSource
+            if (this._requestVideoFrameCallback !== null) {
                 video.cancelVideoFrameCallback(this._requestVideoFrameCallback)
-                this._requestVideoFrameCallback = null;
+                this._requestVideoFrameCallback = null
             }
             const requestFrame = () => {
                 this.draw(video)
-                this._requestVideoFrameCallback = video.requestVideoFrameCallback(requestFrame)
+                this._requestVideoFrameCallback =
+                    video.requestVideoFrameCallback(requestFrame)
             }
             if (video.readyState < video.HAVE_CURRENT_DATA)
                 video.addEventListener("loadeddata", requestFrame)
             else requestFrame()
-        }
-        else 
-        {
-            const frames = this._imgSource;
-            let frameIndex = 0;
-            if(this._animationTimeout)
-            {
+        } else {
+            const frames = this._imgSource
+            let frameIndex = 0
+            if (this._animationTimeout) {
                 clearTimeout(this._animationTimeout)
-                this._animationTimeout = null;
+                this._animationTimeout = null
             }
             const drawFrame = () => {
-                if(frames.length === 0)
-                    return;
+                if (frames.length === 0) return
                 const frame = frames[frameIndex]
-                const duration = frame.duration / 1000;
+                const duration = frame.duration / 1000
                 this.draw(frame)
-                if(frames.length > 1)
-                {
-                    frameIndex = (frameIndex + 1) % frames.length;
-                    this._animationTimeout = setTimeout(() => drawFrame(), duration);
+                if (frames.length > 1) {
+                    frameIndex = (frameIndex + 1) % frames.length
+                    this._animationTimeout = setTimeout(
+                        () => drawFrame(),
+                        duration,
+                    )
                 }
             }
             drawFrame()
