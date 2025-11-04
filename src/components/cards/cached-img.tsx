@@ -15,6 +15,8 @@ class CachedImg extends React.Component<ImgProps> {
     private readonly _maxCanvasDimension = 256
     private _needsRescaling: boolean = true
     private _imgSource: HTMLImageElement | HTMLVideoElement | VideoFrame[] | null = null
+    private _animationTimeout: NodeJS.Timeout | null = null
+    private _requestVideoFrameCallback: number | null = null
 
     constructor(props: ImgProps) {
         super(props)
@@ -107,12 +109,8 @@ class CachedImg extends React.Component<ImgProps> {
         )
     }
 
-    render(): React.ReactNode {
-        const canvas = (
-            <canvas
-                className={this.props.className}
-                ref={this._canvasRef}></canvas>
-        )
+    private async renderImage() : Promise<void>
+    {
         if (CachedImg._cache.has(this.props.src)) {
             this._imgSource = CachedImg._cache.get(this.props.src)
         } else {
@@ -123,11 +121,7 @@ class CachedImg extends React.Component<ImgProps> {
                 this._imgSource.autoplay = true
                 this._imgSource.src = this.props.src
             } else if (this.isGif(this.props.src)){
-                this._imgSource = []
-                this.loadImage(this.props.src).then(f => {
-                    (this._imgSource as VideoFrame[]).push(...f);
-                    this.forceUpdate();
-                })
+                this._imgSource = await this.loadImage(this.props.src);
             } else {
                 this._imgSource = new Image()
                 this._imgSource.loading = "eager"
@@ -136,36 +130,61 @@ class CachedImg extends React.Component<ImgProps> {
             CachedImg._cache.set(this.props.src, this._imgSource)
         }
         if (this._imgSource instanceof HTMLImageElement) {
-            this._imgSource
-                .decode()
-                .then(() => this.draw(this._imgSource as HTMLImageElement))
-                .catch(() => this.forceUpdate())
-        } else if (this._imgSource instanceof HTMLVideoElement) {
-            const requestFrame = () => {
-                this.draw(this._imgSource as HTMLVideoElement)
-                ;(
-                    this._imgSource as HTMLVideoElement
-                ).requestVideoFrameCallback(requestFrame)
+            try{
+                await this._imgSource.decode();
+                this.draw(this._imgSource);
             }
-            if (this._imgSource.readyState < this._imgSource.HAVE_CURRENT_DATA)
-                this._imgSource.addEventListener("loadeddata", requestFrame)
+            catch
+            {
+                this.forceUpdate();
+            }
+        } else if (this._imgSource instanceof HTMLVideoElement) {
+            const video = this._imgSource;
+            if(this._requestVideoFrameCallback !== null)
+            {
+                video.cancelVideoFrameCallback(this._requestVideoFrameCallback)
+                this._requestVideoFrameCallback = null;
+            }
+            const requestFrame = () => {
+                this.draw(video)
+                this._requestVideoFrameCallback = video.requestVideoFrameCallback(requestFrame)
+            }
+            if (video.readyState < video.HAVE_CURRENT_DATA)
+                video.addEventListener("loadeddata", requestFrame)
             else requestFrame()
         }
         else 
         {
-            const framesNumber = (this._imgSource as VideoFrame[]).length;
+            const frames = this._imgSource;
             let frameIndex = 0;
+            if(this._animationTimeout)
+            {
+                clearTimeout(this._animationTimeout)
+                this._animationTimeout = null;
+            }
             const drawFrame = () => {
-                if(framesNumber === 0)
+                if(frames.length === 0)
                     return;
-                const frame = (this._imgSource as VideoFrame[])[frameIndex]
+                const frame = frames[frameIndex]
                 const duration = frame.duration / 1000;
                 this.draw(frame)
-                frameIndex = (frameIndex + 1) % framesNumber;
-                setTimeout(() => drawFrame(), duration);
+                if(frames.length > 1)
+                {
+                    frameIndex = (frameIndex + 1) % frames.length;
+                    this._animationTimeout = setTimeout(() => drawFrame(), duration);
+                }
             }
             drawFrame()
         }
+    }
+
+    render(): React.ReactNode {
+        const canvas = (
+            <canvas
+                className={this.props.className}
+                ref={this._canvasRef}></canvas>
+        )
+        this.renderImage()
         return canvas
     }
 }
