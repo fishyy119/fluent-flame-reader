@@ -151,7 +151,6 @@ export class RSSItem {
             item.snippet = htmlDecode(parsed.contentSnippet || "")
         }
         item.thumbnails = []
-        //TODO: take preferences into account
         if (parsed.link) {
             const head = await this.fetchHead(parsed.link)
             if (/og:(?:image|video)/gi.test(head))

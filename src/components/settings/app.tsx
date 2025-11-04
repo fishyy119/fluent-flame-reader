@@ -398,21 +398,21 @@ function ThumbnailTypePreferences() {
     const preferenceOptions: IDropdownOption[] = [
         {
             key: ThumbnailTypePref.OpenGraph,
-            text: intl.get("thumbnails.opengraph").d("OpenGraph"),
+            text: intl.get("app.thumbnails.opengraph").d("OpenGraph"),
         },
         {
             key: ThumbnailTypePref.MediaThumbnail,
             text: intl
-                .get("thumbnails.mediaThumbnail")
+                .get("app.thumbnails.mediaThumbnail")
                 .d("RSS media:thumbnail"),
         },
         {
             key: ThumbnailTypePref.Thumb,
-            text: intl.get("thumbnails.thumb").d("RSS thumb"),
+            text: intl.get("app.thumbnails.thumb").d("RSS thumb"),
         },
         {
             key: ThumbnailTypePref.Other,
-            text: intl.get("thumbnails.other").d("Any other thumbnail"),
+            text: intl.get("app.thumbnails.other").d("Any other thumbnail"),
         },
     ]
     const prefChange = (_: any, item: IDropdownOption) => {
