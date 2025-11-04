@@ -22,20 +22,13 @@ class CachedImg extends React.Component<ImgProps> {
         super(props)
     }
 
-    private isVideo(url: string): boolean {
-        const extensionSearch = /\.(\w{3,4})(?:$|\?)/.exec(url)
-        return (
-            extensionSearch &&
-            extensionSearch.length > 1 &&
-            CachedImg.videoExtensions.includes(extensionSearch[1])
-        )
-    }
-
-    private isGif(url: string)
+    private async loadContentType(url: string): Promise<string>
     {
-        const extensionSearch = /\.(\w{3,4})(?:$|\?)/.exec(url)
-        return extensionSearch &&
-            extensionSearch.length > 1 && extensionSearch[1] === "gif"
+        const response = await fetch(url, {method: "HEAD"});
+        if(!response.ok)
+            return "";
+        return response.headers.get("content-type");
+
     }
 
     private async loadImage(url: string): Promise<VideoFrame[] | null>
@@ -114,13 +107,14 @@ class CachedImg extends React.Component<ImgProps> {
         if (CachedImg._cache.has(this.props.src)) {
             this._imgSource = CachedImg._cache.get(this.props.src)
         } else {
-            if (this.isVideo(this.props.src)) {
+            const contentType = await this.loadContentType(this.props.src)
+            if (contentType.startsWith("video/")) {
                 this._imgSource = document.createElement("video")
                 this._imgSource.loop = true
                 this._imgSource.muted = true
                 this._imgSource.autoplay = true
                 this._imgSource.src = this.props.src
-            } else if (this.isGif(this.props.src)){
+            } else if (["image/gif", "image/webp", "image/avif", "image/apng", "image/svg"].includes(contentType) && ImageDecoder.isTypeSupported(contentType)){
                 this._imgSource = await this.loadImage(this.props.src);
             } else {
                 this._imgSource = new Image()
