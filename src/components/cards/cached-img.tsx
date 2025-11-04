@@ -28,6 +28,7 @@ class CachedImg extends React.Component<ImgProps> {
     }
 
     private async loadContentType(url: string): Promise<string> {
+        if (!url) return ""
         const response = await fetch(url, { method: "HEAD" })
         if (!response.ok) return ""
         return response.headers.get("content-type")

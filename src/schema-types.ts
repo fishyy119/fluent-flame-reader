@@ -52,6 +52,13 @@ export enum AnimationMotionPref {
     Off = "off",
 }
 
+export enum ThumbnailTypePref {
+    OpenGraph = "opengraph",
+    MediaThumbnail = "mediaThumbnail",
+    Thumb = "thumb",
+    Other = "other",
+}
+
 export const enum SearchEngines {
     Google,
     Bing,
@@ -114,4 +121,5 @@ export type SchemaTypes = {
     serviceConfigs: ServiceConfigs
     filterType: number
     listViewConfigs: ViewConfigs
+    thumbnailTypePref: ThumbnailTypePref
 }

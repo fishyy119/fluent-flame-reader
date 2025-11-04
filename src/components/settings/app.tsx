@@ -1,15 +1,12 @@
 import * as React from "react"
 import * as db from "../../scripts/db"
 import intl from "react-intl-universal"
-import {
-    urlTest,
-    byteToMB,
-    getSearchEngineName,
-} from "../../scripts/utils"
+import { urlTest, byteToMB, getSearchEngineName } from "../../scripts/utils"
 import {
     AnimationMotionPref,
     ThemeSettings,
     SearchEngines,
+    ThumbnailTypePref,
 } from "../../schema-types"
 import {
     getThemeSettings,
@@ -17,6 +14,8 @@ import {
     getAnimationMotionPref,
     setAnimationMotionPref,
     exportAll,
+    getThumbnailTypePref,
+    setThumbnailTypePref,
 } from "../../scripts/settings"
 import {
     Stack,
@@ -183,6 +182,7 @@ class AppTab extends React.Component<AppTabProps, AppTabState> {
                 selectedKey={this.state.themeSettings}
             />
             <AnimationPreferences />
+            <ThumbnailTypePreferences />
             <Label>{intl.get("app.fetchInterval")}</Label>
             <Stack horizontal>
                 <Stack.Item>
@@ -382,6 +382,52 @@ function AnimationPreferences() {
                     <Dropdown
                         options={preferenceOptions}
                         selectedKey={animationProp}
+                        onChange={prefChange}
+                        style={{ width: 200 }}
+                    />
+                </Stack.Item>
+            </Stack>
+        </>
+    )
+}
+
+function ThumbnailTypePreferences() {
+    const [thumbnailType, setThumbnailType] = React.useState(
+        getThumbnailTypePref(),
+    )
+    const preferenceOptions: IDropdownOption[] = [
+        {
+            key: ThumbnailTypePref.OpenGraph,
+            text: intl.get("thumbnails.opengraph").d("OpenGraph"),
+        },
+        {
+            key: ThumbnailTypePref.MediaThumbnail,
+            text: intl
+                .get("thumbnails.mediaThumbnail")
+                .d("RSS media:thumbnail"),
+        },
+        {
+            key: ThumbnailTypePref.Thumb,
+            text: intl.get("thumbnails.thumb").d("RSS thumb"),
+        },
+        {
+            key: ThumbnailTypePref.Other,
+            text: intl.get("thumbnails.other").d("Any other thumbnail"),
+        },
+    ]
+    const prefChange = (_: any, item: IDropdownOption) => {
+        setThumbnailTypePref(item.key as ThumbnailTypePref)
+        setThumbnailType(item.key as ThumbnailTypePref)
+    }
+
+    return (
+        <>
+            <Label>{"Preferred thumbnail source"}</Label>
+            <Stack horizontal>
+                <Stack.Item>
+                    <Dropdown
+                        options={preferenceOptions}
+                        selectedKey={thumbnailType}
                         onChange={prefChange}
                         style={{ width: 200 }}
                     />

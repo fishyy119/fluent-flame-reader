@@ -1,5 +1,6 @@
 import { SourceRule } from "./models/rule"
 import { Dexie, type EntityTable } from "dexie"
+import type { ThumbnailAttributes } from "./utils"
 
 export interface SourceEntry {
     sid: number
@@ -23,6 +24,7 @@ export interface ItemEntry {
     date: Date
     fetchedDate: Date
     thumb?: string
+    thumbnails?: ThumbnailAttributes[]
     content: string
     snippet: string
     creator?: string

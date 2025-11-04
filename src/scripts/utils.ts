@@ -3,7 +3,7 @@ import { ThunkAction, ThunkDispatch } from "redux-thunk"
 import { AnyAction } from "redux"
 import { RootState } from "./reducer"
 import Parser from "rss-parser"
-import { SearchEngines } from "../schema-types"
+import { SearchEngines, ThumbnailTypePref } from "../schema-types"
 
 export enum ActionStatus {
     Request,
@@ -34,6 +34,12 @@ const rssParser = new Parser({
 })
 type extractGeneric<Type> = Type extends Parser<infer _, infer U> ? U : never
 export type MyParserItem = extractGeneric<typeof rssParser> & Parser.Item
+
+export interface ThumbnailAttributes {
+    medium: "image" | "video"
+    url: string
+    type: ThumbnailTypePref
+}
 
 const CHARSET_RE = /charset=([^()<>@,;:\"/[\]?.=\s]*)/i
 const XML_ENCODING_RE = /^<\?xml.+encoding="(.+?)".*?\?>/i
@@ -102,10 +108,7 @@ export async function fetchFavicon(urlString: string): Promise<string | null> {
     if (result.ok) {
         const html = await result.text()
         const dom = new DOMParser().parseFromString(html, "text/html")
-        const potentialFavicons = getPotentialFavicons(
-            dom,
-            new URL(url.origin),
-        )
+        const potentialFavicons = getPotentialFavicons(dom, new URL(url.origin))
         if (potentialFavicons.length !== 0) {
             return potentialFavicons[0].href
         }
@@ -271,13 +274,13 @@ export function initTouchBarWithTexts() {
  * Usually that means it's older than the limit.
  * before can be used to invert the calculation.
  */
-export function dateCompare(itemDate: Date, limitDate: Date, before=false) {
-    if ((before && itemDate > limitDate) || (itemDate < limitDate)) {
+export function dateCompare(itemDate: Date, limitDate: Date, before = false) {
+    if ((before && itemDate > limitDate) || itemDate < limitDate) {
         return false
     }
     return true
 }
 
 export const exportedForTesting = {
-  getPotentialFavicons
+    getPotentialFavicons,
 }

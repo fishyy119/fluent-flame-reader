@@ -3,7 +3,11 @@ import { IPartialTheme, loadTheme } from "@fluentui/react"
 
 import * as db from "./db"
 import locales from "./i18n/_locales"
-import { AnimationMotionPref, ThemeSettings } from "../schema-types"
+import {
+    AnimationMotionPref,
+    ThemeSettings,
+    ThumbnailTypePref,
+} from "../schema-types"
 import { SourceTextDirection } from "./models/source"
 
 let lightTheme: IPartialTheme = {
@@ -80,8 +84,12 @@ export function applyThemeSettings() {
 window.settings.addThemeUpdateListener(shouldDark => {
     loadTheme(shouldDark ? darkTheme : lightTheme)
 })
-
-
+export function getThumbnailTypePref(): ThumbnailTypePref {
+    return window.settings.getThumbnailTypePref()
+}
+export function setThumbnailTypePref(pref: ThumbnailTypePref) {
+    window.settings.setThumbnailTypePref(pref)
+}
 export function getAnimationMotionPref(): AnimationMotionPref {
     return window.settings.getAnimationMotionPref()
 }
@@ -108,14 +116,14 @@ export function applyAnimationMotionPref() {
     resetInjectedTransitionCSS()
     switch (realisedPref) {
         case AnimationMotionPref.Off:
-            injectNoTransitionCSS();
-            break;
+            injectNoTransitionCSS()
+            break
         case AnimationMotionPref.Reduced:
-            injectReducedTransitionCSS();
-            break;
+            injectReducedTransitionCSS()
+            break
         case AnimationMotionPref.On:
         default:
-            break;
+            break
     }
 }
 
@@ -200,7 +208,7 @@ export async function importAll() {
         i.date = new Date(i.date)
         i.fetchedDate = new Date(i.fetchedDate)
     })
-    await db.fluentDB.items.bulkAdd(configs.database.items);
+    await db.fluentDB.items.bulkAdd(configs.database.items)
     delete configs.database
     window.settings.setAll(configs)
     return false

@@ -9,6 +9,7 @@ import {
     SyncService,
     ServiceConfigs,
     ViewConfigs,
+    ThumbnailTypePref,
 } from "../schema-types"
 import { ipcMain, session, nativeTheme, app } from "electron"
 import { WindowManager } from "./window"
@@ -101,10 +102,24 @@ export function setThemeListener(manager: WindowManager) {
 
 const ANIMATION_MOTION_PREF_KEY = "animationMotionPref"
 ipcMain.on("get-animation-motion-pref", event => {
-    event.returnValue = store.get(ANIMATION_MOTION_PREF_KEY, AnimationMotionPref.System)
+    event.returnValue = store.get(
+        ANIMATION_MOTION_PREF_KEY,
+        AnimationMotionPref.System,
+    )
 })
 ipcMain.handle("set-animation-motion-pref", (_, pref: AnimationMotionPref) => {
     store.set(ANIMATION_MOTION_PREF_KEY, pref)
+})
+
+const THUMBNAIL_TYPE_PREF = "thumbnailTypePref"
+ipcMain.on("get-thumbnail-type-pref", event => {
+    event.returnValue = store.get(
+        THUMBNAIL_TYPE_PREF,
+        ThumbnailTypePref.OpenGraph,
+    )
+})
+ipcMain.handle("set-thumbnail-type-pref", (_, pref: ThumbnailTypePref) => {
+    store.set(THUMBNAIL_TYPE_PREF, pref)
 })
 
 const LOCALE_STORE_KEY = "locale"
@@ -157,7 +172,10 @@ ipcMain.handle("set-fetch-interval", (_, interval: number) => {
 
 const SEARCH_ENGINE_STORE_KEY = "searchEngine"
 ipcMain.on("get-search-engine", event => {
-    event.returnValue = store.get(SEARCH_ENGINE_STORE_KEY, SearchEngines.Startpage)
+    event.returnValue = store.get(
+        SEARCH_ENGINE_STORE_KEY,
+        SearchEngines.Startpage,
+    )
 })
 ipcMain.handle("set-search-engine", (_, engine: SearchEngines) => {
     store.set(SEARCH_ENGINE_STORE_KEY, engine)
@@ -187,7 +205,7 @@ ipcMain.on("get-view-configs", (event, view: ViewType) => {
         case ViewType.List:
             event.returnValue = store.get(
                 LIST_CONFIGS_STORE_KEY,
-                ViewConfigs.ShowCover
+                ViewConfigs.ShowCover,
             )
             break
         default:
@@ -203,5 +221,5 @@ ipcMain.handle(
                 store.set(LIST_CONFIGS_STORE_KEY, configs)
                 break
         }
-    }
+    },
 )

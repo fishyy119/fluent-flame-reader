@@ -1,6 +1,6 @@
 import { fluentDB } from "../db"
 import intl from "react-intl-universal"
-import type { MyParserItem } from "../utils"
+import type { MyParserItem, ThumbnailAttributes } from "../utils"
 import {
     htmlDecode,
     ActionStatus,
@@ -22,6 +22,7 @@ import {
     ServiceActionTypes,
     SYNC_LOCAL_ITEMS,
 } from "./service"
+import { ThumbnailTypePref } from "../../schema-types"
 
 export class RSSItem {
     iid: number
@@ -31,6 +32,7 @@ export class RSSItem {
     date: Date
     fetchedDate: Date
     thumb?: string
+    thumbnails?: ThumbnailAttributes[]
     content: string
     snippet: string
     creator?: string
@@ -73,7 +75,9 @@ export class RSSItem {
         return result
     }
 
-    static opengraphThumbnail(head: string): string | null {
+    private static async opengraphThumbnail(
+        head: string,
+    ): Promise<ThumbnailAttributes[]> {
         const dom = new DOMParser().parseFromString(head, "text/html")
         const elements = [
             ...dom.head.querySelectorAll(
@@ -91,11 +95,47 @@ export class RSSItem {
             "og:video:url",
             "og:video:secure_url",
         ]
+        const result: ThumbnailAttributes[] = []
         for (const query of queries) {
             const element = elements.find(e => e.tag === query)?.content ?? null
-            if (element !== null) return element
+            if (element !== null)
+                result.push(
+                    await this.urlToThumbnailAttributes(
+                        element,
+                        query.startsWith("og:image") ? "image" : "video",
+                        ThumbnailTypePref.OpenGraph,
+                    ),
+                )
         }
-        return null
+        return result
+    }
+
+    private static async urlToThumbnailAttributes(
+        url: string,
+        medium: "image" | "video" | "unknown",
+        type: ThumbnailTypePref,
+    ): Promise<ThumbnailAttributes> {
+        if (medium === "image" || medium === "video") {
+            return {
+                url,
+                medium,
+                type,
+            }
+        }
+        const response = await fetch(url, { method: "HEAD" })
+        if (!response.ok)
+            return {
+                url,
+                medium: "image", //assume image as a fallback
+                type,
+            }
+        const contentType = response.headers.get("content-type")
+        medium = contentType.startsWith("video/") ? "video" : "image"
+        return {
+            url,
+            medium,
+            type,
+        }
     }
 
     static async parseContent(item: RSSItem, parsed: MyParserItem) {
@@ -110,48 +150,88 @@ export class RSSItem {
             item.content = parsed.content || ""
             item.snippet = htmlDecode(parsed.contentSnippet || "")
         }
+        item.thumbnails = []
         //TODO: take preferences into account
         if (parsed.link) {
             const head = await this.fetchHead(parsed.link)
             if (/og:(?:image|video)/gi.test(head))
-                item.thumb = this.opengraphThumbnail(head)
+                item.thumbnails.push(...(await this.opengraphThumbnail(head)))
         }
-        if (!item.thumb) {
-            if (parsed.thumb) {
-                item.thumb = parsed.thumb
-            } else if (parsed.image?.$?.url) {
-                item.thumb = parsed.image.$.url
-            } else if (parsed.image && typeof parsed.image === "string") {
-                item.thumb = parsed.image
-            } else if (parsed.mediaThumbnails) {
-                const images = parsed.mediaThumbnails.filter(t => t.$?.url)
-                if (images.length > 0) item.thumb = images[0].$.url
-            } else if (parsed.mediaContent) {
-                let images = parsed.mediaContent.filter(
-                    c =>
-                        c.$ &&
-                        (c.$.medium === "image" ||
-                            (typeof c.$.type === "string" &&
-                                c.$.type.startsWith("image/"))) &&
-                        c.$.url,
+        if (parsed.mediaThumbnails) {
+            const images = parsed.mediaThumbnails.filter(t => t.$?.url)
+            for (const image of images)
+                item.thumbnails.push(
+                    await this.urlToThumbnailAttributes(
+                        image.$.url,
+                        "unknown",
+                        ThumbnailTypePref.MediaThumbnail,
+                    ),
                 )
-                if (images.length > 0) item.thumb = images[0].$.url
-            }
-            if (!item.thumb) {
-                let dom = new DOMParser().parseFromString(
-                    item.content,
-                    "text/html",
-                )
-                let baseEl = dom.createElement("base")
-                baseEl.setAttribute(
-                    "href",
-                    item.link.split("/").slice(0, 3).join("/"),
-                )
-                dom.head.append(baseEl)
-                let img = dom.querySelector("img")
-                if (img && img.src) item.thumb = img.src
-            }
         }
+        if (parsed.thumb) {
+            item.thumbnails.push(
+                await this.urlToThumbnailAttributes(
+                    parsed.thumb,
+                    "unknown",
+                    ThumbnailTypePref.Thumb,
+                ),
+            )
+        }
+        if (parsed.image?.$?.url) {
+            item.thumbnails.push(
+                await this.urlToThumbnailAttributes(
+                    parsed.image.$.url,
+                    "image",
+                    ThumbnailTypePref.Other,
+                ),
+            )
+        }
+        if (parsed.image && typeof parsed.image === "string") {
+            item.thumbnails.push(
+                await this.urlToThumbnailAttributes(
+                    parsed.image,
+                    "image",
+                    ThumbnailTypePref.Other,
+                ),
+            )
+        }
+        if (parsed.mediaContent) {
+            let images = parsed.mediaContent.filter(
+                c =>
+                    c.$ &&
+                    (c.$.medium === "image" ||
+                        (typeof c.$.type === "string" &&
+                            c.$.type.startsWith("image/"))) &&
+                    c.$.url,
+            )
+            for (const image of images)
+                item.thumbnails.push(
+                    await this.urlToThumbnailAttributes(
+                        image.$.url,
+                        image.$.medium,
+                        ThumbnailTypePref.Other,
+                    ),
+                )
+        }
+        if (item.thumbnails.length === 0) {
+            let dom = new DOMParser().parseFromString(item.content, "text/html")
+            let baseEl = dom.createElement("base")
+            baseEl.setAttribute(
+                "href",
+                item.link.split("/").slice(0, 3).join("/"),
+            )
+            dom.head.append(baseEl)
+            let img = dom.querySelector("img")
+            if (img && img.src)
+                item.thumbnails.push(
+                    await this.urlToThumbnailAttributes(
+                        img.src,
+                        "image",
+                        ThumbnailTypePref.Other,
+                    ),
+                )
+        }
+        item.thumb = item.thumbnails.at(0)?.url
         if (
             item.thumb &&
             !item.thumb.startsWith("https://") &&

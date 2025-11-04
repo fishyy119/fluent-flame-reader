@@ -5,7 +5,8 @@ import {
     SearchEngines,
     ServiceConfigs,
     ViewConfigs,
-    AnimationMotionPref
+    AnimationMotionPref,
+    ThumbnailTypePref,
 } from "../schema-types"
 import { ipcRenderer } from "electron"
 
@@ -58,12 +59,19 @@ const settingsBridge = {
             callback(shouldDark)
         })
     },
-    
+
     getAnimationMotionPref: (): AnimationMotionPref => {
         return ipcRenderer.sendSync("get-animation-motion-pref")
     },
     setAnimationMotionPref: (pref: AnimationMotionPref) => {
         ipcRenderer.invoke("set-animation-motion-pref", pref)
+    },
+
+    getThumbnailTypePref: (): ThumbnailTypePref => {
+        return ipcRenderer.sendSync("get-thumbnail-type-pref")
+    },
+    setThumbnailTypePref: (pref: ThumbnailTypePref) => {
+        ipcRenderer.invoke("set-thumbnail-type-pref", pref)
     },
 
     setLocaleSettings: (option: string) => {
