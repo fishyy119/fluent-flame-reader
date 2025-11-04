@@ -178,6 +178,22 @@ class CachedImg extends React.Component<ImgProps> {
         }
     }
 
+    componentWillUnmount(): void {
+        if (this._animationTimeout) {
+            clearTimeout(this._animationTimeout)
+            this._animationTimeout = null
+        }
+        if (
+            this._imgSource instanceof HTMLVideoElement &&
+            this._requestVideoFrameCallback !== null
+        ) {
+            this._imgSource.cancelVideoFrameCallback(
+                this._requestVideoFrameCallback,
+            )
+            this._requestVideoFrameCallback = null
+        }
+    }
+
     render(): React.ReactNode {
         const canvas = (
             <canvas
