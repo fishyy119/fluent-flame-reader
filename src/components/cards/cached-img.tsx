@@ -1,4 +1,6 @@
 import * as React from "react"
+import { AnimationMotionPref } from "../../schema-types"
+import { getAnimationMotionPref } from "../../scripts/settings"
 
 type ImgProps = {
     src: string
@@ -10,7 +12,6 @@ class CachedImg extends React.Component<ImgProps> {
         string,
         HTMLImageElement | HTMLVideoElement | VideoFrame[]
     >()
-    private static readonly videoExtensions = ["mp4", "webm", "mkv", "mov"]
     private readonly _canvasRef = React.createRef<HTMLCanvasElement>()
     private readonly _maxCanvasDimension = 256
     private _needsRescaling: boolean = true
@@ -104,6 +105,14 @@ class CachedImg extends React.Component<ImgProps> {
     }
 
     private async renderImage(): Promise<void> {
+        const animationMotionPref = getAnimationMotionPref()
+        const realisedAnimationMotionPref =
+            animationMotionPref !== AnimationMotionPref.System
+                ? animationMotionPref
+                : window.utils.systemPreferencesGetAnimationSettings()
+                        .prefersReducedMotion
+                  ? AnimationMotionPref.Off
+                  : AnimationMotionPref.On
         if (CachedImg._cache.has(this.props.src)) {
             this._imgSource = CachedImg._cache.get(this.props.src)
         } else {
@@ -148,8 +157,9 @@ class CachedImg extends React.Component<ImgProps> {
             }
             const requestFrame = () => {
                 this.draw(video)
-                this._requestVideoFrameCallback =
-                    video.requestVideoFrameCallback(requestFrame)
+                if (realisedAnimationMotionPref === AnimationMotionPref.On)
+                    this._requestVideoFrameCallback =
+                        video.requestVideoFrameCallback(requestFrame)
             }
             if (video.readyState < video.HAVE_CURRENT_DATA)
                 video.addEventListener("loadeddata", requestFrame)
@@ -166,7 +176,10 @@ class CachedImg extends React.Component<ImgProps> {
                 const frame = frames[frameIndex]
                 const duration = frame.duration / 1000
                 this.draw(frame)
-                if (frames.length > 1) {
+                if (
+                    frames.length > 1 &&
+                    realisedAnimationMotionPref === AnimationMotionPref.On
+                ) {
                     frameIndex = (frameIndex + 1) % frames.length
                     this._animationTimeout = setTimeout(
                         () => drawFrame(),
