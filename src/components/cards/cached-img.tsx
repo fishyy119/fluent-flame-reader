@@ -7,10 +7,17 @@ type ImgProps = {
     className?: string
 }
 
+type PlaceholderImageSource = "<PLACEHOLDER>"
+const placeholderImageSource: PlaceholderImageSource = "<PLACEHOLDER>"
+
 class CachedImg extends React.Component<ImgProps> {
     private static readonly _cache = new Map<
         string,
-        HTMLImageElement | HTMLVideoElement | VideoFrame[] | null
+        | HTMLImageElement
+        | HTMLVideoElement
+        | VideoFrame[]
+        | null
+        | PlaceholderImageSource
     >()
     private readonly _canvasRef = React.createRef<HTMLCanvasElement>()
     private readonly _maxCanvasDimension = 256
@@ -35,13 +42,12 @@ class CachedImg extends React.Component<ImgProps> {
     }
 
     private async loadImage(url: string): Promise<VideoFrame[]> {
-        try
-        {
+        try {
             const response = await fetch(url)
-            if (!response.ok) return []
+            if (!response.ok) return null
             const data = await response.bytes()
             const contentType = response.headers.get("content-type")
-            if (!ImageDecoder.isTypeSupported(contentType)) return []
+            if (!ImageDecoder.isTypeSupported(contentType)) return null
             const decoder = new ImageDecoder({ data, type: contentType })
             let frameIndex = 0
             const frames: VideoFrame[] = []
@@ -58,11 +64,9 @@ class CachedImg extends React.Component<ImgProps> {
                 }
             }
             return frames
-        }
-        catch
-        {
+        } catch {
             console.log(`Failed to fetch ${url}`)
-            return []
+            return null
         }
     }
 
@@ -124,12 +128,12 @@ class CachedImg extends React.Component<ImgProps> {
                   : AnimationMotionPref.On
         if (CachedImg._cache.has(this.props.src)) {
             const imgSource = CachedImg._cache.get(this.props.src)
-            if (imgSource === null) {
+            if (imgSource === placeholderImageSource) {
                 await new Promise(resolve => setTimeout(resolve, 100))
                 this.forceUpdate()
             } else this._imgSource = imgSource
         } else {
-            CachedImg._cache.set(this.props.src, null)
+            CachedImg._cache.set(this.props.src, placeholderImageSource)
             const contentType = await this.loadContentType(this.props.src)
             if (contentType.startsWith("video/")) {
                 this._imgSource = document.createElement("video")
@@ -149,7 +153,7 @@ class CachedImg extends React.Component<ImgProps> {
                 ImageDecoder.isTypeSupported(contentType)
             ) {
                 this._imgSource = await this.loadImage(this.props.src)
-            } else {
+            } else if (contentType !== "") {
                 this._imgSource = new Image()
                 this._imgSource.loading = "eager"
                 this._imgSource.src = this.props.src
