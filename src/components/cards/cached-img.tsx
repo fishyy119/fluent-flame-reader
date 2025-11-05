@@ -165,10 +165,11 @@ class CachedImg extends React.Component<ImgProps> {
                 ImageDecoder.isTypeSupported(contentType)
             ) {
                 const imgSource = await this.loadImage(this.props.src)
-                this._imgSource =
-                    imgSource.length === 1
-                        ? this.createImage(this.props.src)
-                        : imgSource
+                if (imgSource.length === 1 && this._canvasRef.current) {
+                    this.draw(imgSource[0])
+                    const img = this._canvasRef.current.toDataURL()
+                    this._imgSource = this.createImage(img)
+                } else this._imgSource = imgSource
             } else if (contentType !== "") {
                 this._imgSource = this.createImage(this.props.src)
             }
