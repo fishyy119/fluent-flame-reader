@@ -213,7 +213,7 @@ export class RSSItem {
                     ),
                 )
         }
-        if (item.thumbnails.length === 0) {
+        if (item.content) {
             let dom = new DOMParser().parseFromString(item.content, "text/html")
             let baseEl = dom.createElement("base")
             baseEl.setAttribute(
