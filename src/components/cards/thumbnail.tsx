@@ -8,7 +8,7 @@ type CardThumbnailProps = {
     className?: string
 }
 
-const mediaElement = (src: string | null, className: string) => {
+const mediaElement = (src: string, className: string) => {
     return <CachedImg src={src} className={className}></CachedImg>
 }
 
@@ -22,7 +22,7 @@ const CardThumbnail: React.FunctionComponent<CardThumbnailProps> = props => {
             ? preferredThumbnails[0].url
             : props.item.thumb
     return selectedThumbnail
-        ? mediaElement(selectedThumbnail, props.className)
+        ? mediaElement(new URL(selectedThumbnail, props.item.link).toString(), props.className)
         : null
 }
 export default CardThumbnail

@@ -231,6 +231,13 @@ export class RSSItem {
                     ),
                 )
         }
+        item.thumbnails = item.thumbnails.map(t => {
+            return {
+                medium: t.medium,
+                type: t.type,
+                url: new URL(t.url, item.link).toString()
+            }
+        })
         item.thumb = item.thumbnails.at(0)?.url
         if (
             item.thumb &&
