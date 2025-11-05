@@ -10,7 +10,7 @@ type ImgProps = {
 class CachedImg extends React.Component<ImgProps> {
     private static readonly _cache = new Map<
         string,
-        HTMLImageElement | HTMLVideoElement | VideoFrame[] | "placeholder"
+        HTMLImageElement | HTMLVideoElement | VideoFrame[] | null
     >()
     private readonly _canvasRef = React.createRef<HTMLCanvasElement>()
     private readonly _maxCanvasDimension = 256
@@ -34,28 +34,36 @@ class CachedImg extends React.Component<ImgProps> {
         return response.headers.get("content-type")
     }
 
-    private async loadImage(url: string): Promise<VideoFrame[] | null> {
-        const response = await fetch(url)
-        if (!response.ok) return null
-        const data = await response.bytes()
-        const contentType = response.headers.get("content-type")
-        if (!ImageDecoder.isTypeSupported(contentType)) return null
-        const decoder = new ImageDecoder({ data, type: contentType })
-        let frameIndex = 0
-        const frames: VideoFrame[] = []
-        while (true) {
-            try {
-                const image = await decoder.decode({
-                    frameIndex,
-                    completeFramesOnly: true,
-                })
-                frames.push(image.image)
-                frameIndex++
-            } catch (e) {
-                if (e instanceof RangeError) break
+    private async loadImage(url: string): Promise<VideoFrame[]> {
+        try
+        {
+            const response = await fetch(url)
+            if (!response.ok) return []
+            const data = await response.bytes()
+            const contentType = response.headers.get("content-type")
+            if (!ImageDecoder.isTypeSupported(contentType)) return []
+            const decoder = new ImageDecoder({ data, type: contentType })
+            let frameIndex = 0
+            const frames: VideoFrame[] = []
+            while (true) {
+                try {
+                    const image = await decoder.decode({
+                        frameIndex,
+                        completeFramesOnly: true,
+                    })
+                    frames.push(image.image)
+                    frameIndex++
+                } catch (e) {
+                    if (e instanceof RangeError) break
+                }
             }
+            return frames
         }
-        return frames
+        catch
+        {
+            console.log(`Failed to fetch ${url}`)
+            return []
+        }
     }
 
     private draw(img: HTMLImageElement | HTMLVideoElement | VideoFrame) {
@@ -116,12 +124,12 @@ class CachedImg extends React.Component<ImgProps> {
                   : AnimationMotionPref.On
         if (CachedImg._cache.has(this.props.src)) {
             const imgSource = CachedImg._cache.get(this.props.src)
-            if (imgSource === "placeholder") {
+            if (imgSource === null) {
                 await new Promise(resolve => setTimeout(resolve, 100))
                 this.forceUpdate()
             } else this._imgSource = imgSource
         } else {
-            CachedImg._cache.set(this.props.src, "placeholder")
+            CachedImg._cache.set(this.props.src, null)
             const contentType = await this.loadContentType(this.props.src)
             if (contentType.startsWith("video/")) {
                 this._imgSource = document.createElement("video")
