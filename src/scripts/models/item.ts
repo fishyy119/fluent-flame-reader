@@ -65,7 +65,7 @@ export class RSSItem {
         let result = ""
         if (!response.ok || !response.body) return result
         const stream = response.body.pipeThrough(new TextDecoderStream())
-        const headRegex = /<\/head>/i;
+        const headRegex = /<\/head>/i
         for await (const value of stream) {
             result += value
             if (headRegex.test(value)) {
@@ -235,7 +235,7 @@ export class RSSItem {
             return {
                 medium: t.medium,
                 type: t.type,
-                url: new URL(t.url, item.link).toString()
+                url: new URL(t.url, item.link).toString(),
             }
         })
         item.thumb = item.thumbnails.at(0)?.url

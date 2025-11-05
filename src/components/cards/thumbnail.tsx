@@ -22,7 +22,10 @@ const CardThumbnail: React.FunctionComponent<CardThumbnailProps> = props => {
             ? preferredThumbnails[0].url
             : props.item.thumb
     return selectedThumbnail
-        ? mediaElement(new URL(selectedThumbnail, props.item.link).toString(), props.className)
+        ? mediaElement(
+              new URL(selectedThumbnail, props.item.link).toString(),
+              props.className,
+          )
         : null
 }
 export default CardThumbnail

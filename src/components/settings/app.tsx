@@ -422,7 +422,11 @@ function ThumbnailTypePreferences() {
 
     return (
         <>
-            <Label>{intl.get("app.thumbnails.prefLabel").d("Preferred thumbnail source")}</Label>
+            <Label>
+                {intl
+                    .get("app.thumbnails.prefLabel")
+                    .d("Preferred thumbnail source")}
+            </Label>
             <Stack horizontal>
                 <Stack.Item>
                     <Dropdown

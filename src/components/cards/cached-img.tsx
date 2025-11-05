@@ -116,15 +116,12 @@ class CachedImg extends React.Component<ImgProps> {
                   : AnimationMotionPref.On
         if (CachedImg._cache.has(this.props.src)) {
             const imgSource = CachedImg._cache.get(this.props.src)
-            if(imgSource === "placeholder")
-            {
-                await new Promise( resolve => setTimeout(resolve, 100) );
+            if (imgSource === "placeholder") {
+                await new Promise(resolve => setTimeout(resolve, 100))
                 this.forceUpdate()
-            }
-            else
-                this._imgSource = imgSource;
+            } else this._imgSource = imgSource
         } else {
-            CachedImg._cache.set(this.props.src, "placeholder");
+            CachedImg._cache.set(this.props.src, "placeholder")
             const contentType = await this.loadContentType(this.props.src)
             if (contentType.startsWith("video/")) {
                 this._imgSource = document.createElement("video")
@@ -151,8 +148,7 @@ class CachedImg extends React.Component<ImgProps> {
             }
             CachedImg._cache.set(this.props.src, this._imgSource)
         }
-        if(this._imgSource !== null)
-        {
+        if (this._imgSource !== null) {
             if (this._imgSource instanceof HTMLImageElement) {
                 try {
                     await this._imgSource.decode()
@@ -163,7 +159,9 @@ class CachedImg extends React.Component<ImgProps> {
             } else if (this._imgSource instanceof HTMLVideoElement) {
                 const video = this._imgSource
                 if (this._requestVideoFrameCallback !== null) {
-                    video.cancelVideoFrameCallback(this._requestVideoFrameCallback)
+                    video.cancelVideoFrameCallback(
+                        this._requestVideoFrameCallback,
+                    )
                     this._requestVideoFrameCallback = null
                 }
                 const requestFrame = () => {
