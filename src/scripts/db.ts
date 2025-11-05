@@ -39,7 +39,7 @@ export const fluentDB = new Dexie("MainDB") as Dexie & {
     sources: EntityTable<SourceEntry, "sid">
     items: EntityTable<ItemEntry, "iid">
 }
-fluentDB.version(3).stores({
+fluentDB.version(4).stores({
     sources: `++sid, &url`,
     items: `++iid, source, date, serviceRef`,
 })
