@@ -65,9 +65,10 @@ export class RSSItem {
         let result = ""
         if (!response.ok || !response.body) return result
         const stream = response.body.pipeThrough(new TextDecoderStream())
+        const headRegex = /<\/head>/i;
         for await (const value of stream) {
             result += value
-            if (/<\/head>/i.test(value)) {
+            if (headRegex.test(value)) {
                 controller.abort()
                 return result
             }
