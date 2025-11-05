@@ -10,7 +10,7 @@ type ImgProps = {
 class CachedImg extends React.Component<ImgProps> {
     private static readonly _cache = new Map<
         string,
-        HTMLImageElement | HTMLVideoElement | VideoFrame[]
+        HTMLImageElement | HTMLVideoElement | VideoFrame[] | "placeholder"
     >()
     private readonly _canvasRef = React.createRef<HTMLCanvasElement>()
     private readonly _maxCanvasDimension = 256
@@ -115,8 +115,16 @@ class CachedImg extends React.Component<ImgProps> {
                   ? AnimationMotionPref.Off
                   : AnimationMotionPref.On
         if (CachedImg._cache.has(this.props.src)) {
-            this._imgSource = CachedImg._cache.get(this.props.src)
+            const imgSource = CachedImg._cache.get(this.props.src)
+            if(imgSource === "placeholder")
+            {
+                await new Promise( resolve => setTimeout(resolve, 100) );
+                this.forceUpdate()
+            }
+            else
+                this._imgSource = imgSource;
         } else {
+            CachedImg._cache.set(this.props.src, "placeholder");
             const contentType = await this.loadContentType(this.props.src)
             if (contentType.startsWith("video/")) {
                 this._imgSource = document.createElement("video")
@@ -143,52 +151,55 @@ class CachedImg extends React.Component<ImgProps> {
             }
             CachedImg._cache.set(this.props.src, this._imgSource)
         }
-        if (this._imgSource instanceof HTMLImageElement) {
-            try {
-                await this._imgSource.decode()
-                this.draw(this._imgSource)
-            } catch {
-                this.forceUpdate()
-            }
-        } else if (this._imgSource instanceof HTMLVideoElement) {
-            const video = this._imgSource
-            if (this._requestVideoFrameCallback !== null) {
-                video.cancelVideoFrameCallback(this._requestVideoFrameCallback)
-                this._requestVideoFrameCallback = null
-            }
-            const requestFrame = () => {
-                this.draw(video)
-                if (realisedAnimationMotionPref === AnimationMotionPref.On)
-                    this._requestVideoFrameCallback =
-                        video.requestVideoFrameCallback(requestFrame)
-            }
-            if (video.readyState < video.HAVE_CURRENT_DATA)
-                video.addEventListener("loadeddata", requestFrame)
-            else requestFrame()
-        } else {
-            const frames = this._imgSource
-            let frameIndex = 0
-            if (this._animationTimeout) {
-                clearTimeout(this._animationTimeout)
-                this._animationTimeout = null
-            }
-            const drawFrame = () => {
-                if (frames.length === 0) return
-                const frame = frames[frameIndex]
-                const duration = frame.duration / 1000
-                this.draw(frame)
-                if (
-                    frames.length > 1 &&
-                    realisedAnimationMotionPref === AnimationMotionPref.On
-                ) {
-                    frameIndex = (frameIndex + 1) % frames.length
-                    this._animationTimeout = setTimeout(
-                        () => drawFrame(),
-                        duration,
-                    )
+        if(this._imgSource !== null)
+        {
+            if (this._imgSource instanceof HTMLImageElement) {
+                try {
+                    await this._imgSource.decode()
+                    this.draw(this._imgSource)
+                } catch {
+                    this.forceUpdate()
                 }
+            } else if (this._imgSource instanceof HTMLVideoElement) {
+                const video = this._imgSource
+                if (this._requestVideoFrameCallback !== null) {
+                    video.cancelVideoFrameCallback(this._requestVideoFrameCallback)
+                    this._requestVideoFrameCallback = null
+                }
+                const requestFrame = () => {
+                    this.draw(video)
+                    if (realisedAnimationMotionPref === AnimationMotionPref.On)
+                        this._requestVideoFrameCallback =
+                            video.requestVideoFrameCallback(requestFrame)
+                }
+                if (video.readyState < video.HAVE_CURRENT_DATA)
+                    video.addEventListener("loadeddata", requestFrame)
+                else requestFrame()
+            } else {
+                const frames = this._imgSource
+                let frameIndex = 0
+                if (this._animationTimeout) {
+                    clearTimeout(this._animationTimeout)
+                    this._animationTimeout = null
+                }
+                const drawFrame = () => {
+                    if (frames.length === 0) return
+                    const frame = frames[frameIndex]
+                    const duration = frame.duration / 1000
+                    this.draw(frame)
+                    if (
+                        frames.length > 1 &&
+                        realisedAnimationMotionPref === AnimationMotionPref.On
+                    ) {
+                        frameIndex = (frameIndex + 1) % frames.length
+                        this._animationTimeout = setTimeout(
+                            () => drawFrame(),
+                            duration,
+                        )
+                    }
+                }
+                drawFrame()
             }
-            drawFrame()
         }
     }
 
