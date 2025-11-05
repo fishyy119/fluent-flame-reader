@@ -117,6 +117,22 @@ class CachedImg extends React.Component<ImgProps> {
         )
     }
 
+    private createVideo(src: string): HTMLVideoElement {
+        const imgSource = document.createElement("video")
+        imgSource.loop = true
+        imgSource.muted = true
+        imgSource.autoplay = true
+        imgSource.src = src
+        return imgSource
+    }
+
+    private createImage(src: string): HTMLImageElement {
+        const imgSource = new Image()
+        imgSource.loading = "eager"
+        imgSource.src = src
+        return imgSource
+    }
+
     private async renderImage(): Promise<void> {
         const animationMotionPref = getAnimationMotionPref()
         const realisedAnimationMotionPref =
@@ -136,11 +152,7 @@ class CachedImg extends React.Component<ImgProps> {
             CachedImg._cache.set(this.props.src, placeholderImageSource)
             const contentType = await this.loadContentType(this.props.src)
             if (contentType.startsWith("video/")) {
-                this._imgSource = document.createElement("video")
-                this._imgSource.loop = true
-                this._imgSource.muted = true
-                this._imgSource.autoplay = true
-                this._imgSource.src = this.props.src
+                this._imgSource = this.createVideo(this.props.src)
             } else if (
                 //potentially animated images
                 [
@@ -152,11 +164,13 @@ class CachedImg extends React.Component<ImgProps> {
                 ].includes(contentType) &&
                 ImageDecoder.isTypeSupported(contentType)
             ) {
-                this._imgSource = await this.loadImage(this.props.src)
+                const imgSource = await this.loadImage(this.props.src)
+                this._imgSource =
+                    imgSource.length === 1
+                        ? this.createImage(this.props.src)
+                        : imgSource
             } else if (contentType !== "") {
-                this._imgSource = new Image()
-                this._imgSource.loading = "eager"
-                this._imgSource.src = this.props.src
+                this._imgSource = this.createImage(this.props.src)
             }
             CachedImg._cache.set(this.props.src, this._imgSource)
         }
