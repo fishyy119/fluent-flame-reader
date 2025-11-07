@@ -19,8 +19,8 @@ class CachedImg extends React.Component<ImgProps> {
         | null
         | PlaceholderImageSource
     >()
+    private static readonly _maxCanvasDimension = 512
     private readonly _canvasRef = React.createRef<HTMLCanvasElement>()
-    private readonly _maxCanvasDimension = 256
     private _needsRescaling: boolean = true
     private _imgSource:
         | HTMLImageElement
@@ -77,24 +77,24 @@ class CachedImg extends React.Component<ImgProps> {
         }
         const width =
             img instanceof HTMLImageElement
-                ? img.naturalWidth
+                ? img.width
                 : img instanceof HTMLVideoElement
                   ? img.videoWidth
                   : img.displayWidth
         const height =
             img instanceof HTMLImageElement
-                ? img.naturalHeight
+                ? img.height
                 : img instanceof HTMLVideoElement
                   ? img.videoHeight
                   : img.displayHeight
         if (this._needsRescaling) {
             if (
-                width > this._maxCanvasDimension ||
-                height > this._maxCanvasDimension
+                width > CachedImg._maxCanvasDimension ||
+                height > CachedImg._maxCanvasDimension
             ) {
                 const scaleFactor = Math.max(
-                    width / this._maxCanvasDimension,
-                    height / this._maxCanvasDimension,
+                    width / CachedImg._maxCanvasDimension,
+                    height / CachedImg._maxCanvasDimension,
                 )
                 canvas.width = width / scaleFactor
                 canvas.height = height / scaleFactor
@@ -102,6 +102,7 @@ class CachedImg extends React.Component<ImgProps> {
                 canvas.width = width
                 canvas.height = height
             }
+            this._needsRescaling = false
         }
         const ctx = canvas.getContext("2d")
         ctx.drawImage(
